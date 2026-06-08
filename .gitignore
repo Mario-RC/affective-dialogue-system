@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environments
+.env
+.venv/
+venv/
+env/
+
+# Local notebooks and generated media
+.ipynb_checkpoints/
+*.wav
+*.mp3
+*.flac
+*.ogg
+*.m4a
+outputs/
+runs/
+logs/
+
+# Model artifacts and checkpoints
+models/
+resources/
+checkpoints/
+artifacts/
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.ckpt
+*.h5
+
+# Local tooling metadata
+.codex/
+.agents/
+
+# Keep placeholders
+!assets/audio_samples/.gitkeep
+

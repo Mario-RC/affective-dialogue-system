@@ -1,0 +1,19 @@
+models:
+  dialogue: mario-rc/emotional-rlaif-dpo-gemma-2-2b-it
+  emotional_gpt2: mario-rc/emotional-gpt2-medium
+  emotion_classifier_base: mario-rc/multilingual-emotional-classifier-xlm-roberta-base
+  emotion_classifier_large: mario-rc/multilingual-emotional-classifier-xlm-roberta-large
+  asr: openai/whisper-large-v3-turbo
+  tts: tts_models/multilingual/multi-dataset/xtts_v2
+
+runtime:
+  device: null
+  trust_remote_code: false
+  cache_dir: null
+
+dialogue:
+  template: gemma
+  language: es
+  human_name: Human
+  assistant_name: Ray
+

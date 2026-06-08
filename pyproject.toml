@@ -1,0 +1,73 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "affective-dialogue-system"
+version = "0.1.0"
+description = "A modular affective dialogue system with ASR, emotion classification, dialogue generation, interest scoring, and TTS."
+readme = "README.md"
+requires-python = ">=3.10"
+license = {file = "LICENSE"}
+authors = [
+  {name = "Mario Rodriguez"}
+]
+keywords = ["dialogue", "emotion", "speech", "transformers", "tts", "asr"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+ml = [
+  "accelerate>=0.30",
+  "huggingface-hub>=0.23",
+  "safetensors>=0.4",
+  "sentencepiece>=0.2",
+  "torch>=2.1",
+  "transformers>=4.41",
+]
+asr = [
+  "scipy>=1.10",
+  "sounddevice>=0.4",
+]
+tts = [
+  "TTS>=0.22",
+]
+dev = [
+  "pytest>=8",
+  "ruff>=0.5",
+]
+all = [
+  "accelerate>=0.30",
+  "huggingface-hub>=0.23",
+  "safetensors>=0.4",
+  "sentencepiece>=0.2",
+  "torch>=2.1",
+  "transformers>=4.41",
+  "scipy>=1.10",
+  "sounddevice>=0.4",
+  "TTS>=0.22",
+]
+
+[project.scripts]
+affective-dialogue = "affective_dialogue_system.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
