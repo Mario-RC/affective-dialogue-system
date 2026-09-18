@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=69", "wheel"]
+requires = ["setuptools>=77", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "A modular affective dialogue system with ASR, emotion classification, dialogue generation, interest scoring, and TTS."
 readme = "README.md"
 requires-python = ">=3.10"
-license = {file = "LICENSE"}
+license = "LicenseRef-Proprietary"
+license-files = ["LICENSE"]
 authors = [
   {name = "Mario Rodriguez"}
 ]
@@ -20,7 +21,7 @@ classifiers = [
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
-dependencies = []
+dependencies = ["PyYAML>=6,<7"]
 
 [project.optional-dependencies]
 ml = [
@@ -29,30 +30,24 @@ ml = [
   "safetensors>=0.4",
   "sentencepiece>=0.2",
   "torch>=2.1",
-  "transformers>=4.41",
+  "transformers>=4.45,<5",
 ]
 asr = [
-  "scipy>=1.10",
-  "sounddevice>=0.4",
+  "affective-dialogue-system[ml]",
 ]
 tts = [
-  "TTS>=0.22",
+  "TTS>=0.22,<0.23",
+]
+safety = [
+  "affective-dialogue-system[ml]",
+  "detoxify>=0.5",
 ]
 dev = [
-  "pytest>=8",
-  "ruff>=0.5",
+  "pytest>=8,<10",
+  "build>=1,<2",
+  "ruff>=0.11,<0.17",
 ]
-all = [
-  "accelerate>=0.30",
-  "huggingface-hub>=0.23",
-  "safetensors>=0.4",
-  "sentencepiece>=0.2",
-  "torch>=2.1",
-  "transformers>=4.41",
-  "scipy>=1.10",
-  "sounddevice>=0.4",
-  "TTS>=0.22",
-]
+all = ["affective-dialogue-system[ml,asr,tts,safety]"]
 
 [project.scripts]
 affective-dialogue = "affective_dialogue_system.cli:main"
@@ -60,10 +55,15 @@ affective-dialogue = "affective_dialogue_system.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"affective_dialogue_system.safety" = ["data/*.txt"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
 src = ["src", "tests"]
+extend-exclude = ["local"]
+force-exclude = true
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
@@ -71,3 +71,5 @@ ignore = ["E501"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "--strict-markers"
