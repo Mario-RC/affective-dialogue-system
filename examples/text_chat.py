@@ -1,25 +1,23 @@
-from affective_dialogue_system.dialogue import (
-    AffectiveDialogueEngine,
-    AssistantResponse,
-    DialogueTurn,
-    seed_dialogue,
-)
-from affective_dialogue_system.emotion import Emotion
+"""Direct emotional generation with bounded conversation history."""
+
+from affective_dialogue_system.config import load_config
+from affective_dialogue_system.factory import create_dialogue_engine
+from affective_dialogue_system.pipeline import AffectiveDialogueSystem
 
 
 def main() -> None:
-    turns = seed_dialogue("es")
-    turns.append(
-        DialogueTurn(
-            Emotion.ANGER,
-            "No puedo creer que nuestro equipo haya perdido otra vez.",
-            AssistantResponse.placeholder(Emotion.ANGER, Emotion.SADNESS),
-        )
+    config = load_config()
+    conversation = AffectiveDialogueSystem(
+        create_dialogue_engine(config),
+        max_history_turns=config.dialogue.max_history_turns,
     )
-    engine = AffectiveDialogueEngine(language="es")
-    print(engine.generate(turns).format())
+    response = conversation.reply(
+        "Me preocupa la presentación de mañana.",
+        user_emotion="FEAR",
+        second_emotion="NEUTRAL",
+    )
+    print(response.format())
 
 
 if __name__ == "__main__":
     main()
-
