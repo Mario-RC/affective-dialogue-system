@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 import re
-
+import unicodedata
+from dataclasses import dataclass, field
 
 DEFAULT_INTEREST_RANGES: dict[int, set[str]] = {
     20: {"viajes", "lugar", "avion"},
@@ -16,7 +16,6 @@ DEFAULT_INTEREST_RANGES: dict[int, set[str]] = {
 DEFAULT_IGNORE_WORDS = {
     "me",
     "es",
-    "si",
     "si",
     "yo",
     "la",
@@ -54,7 +53,11 @@ DEFAULT_IGNORE_WORDS = {
 
 @dataclass
 class InterestScorer:
-    ranges: dict[int, set[str]] = field(default_factory=lambda: dict(DEFAULT_INTEREST_RANGES))
+    ranges: dict[int, set[str]] = field(
+        default_factory=lambda: {
+            score: set(words) for score, words in DEFAULT_INTEREST_RANGES.items()
+        }
+    )
     ignore_words: set[str] = field(default_factory=lambda: set(DEFAULT_IGNORE_WORDS))
 
     def score(self, sentence: str) -> int:
@@ -62,41 +65,37 @@ class InterestScorer:
         for word in self._tokenize(sentence):
             stemmed_word = self._stem(word)
             for candidate_score, words_set in self.ranges.items():
-                if any(stemmed_word in token for phrase in words_set for token in re.findall(r"\w+", phrase)):
+                if any(
+                    stemmed_word == self._stem(token)
+                    for phrase in words_set
+                    for token in self._tokenize(phrase)
+                ):
                     score = max(score, candidate_score)
         return score
 
     def _tokenize(self, sentence: str) -> list[str]:
-        normalized = sentence.lower()
-        ignore = set(self.ignore_words)
-        ignore.update(word for word in normalized.split() if len(word) == 2)
-        words = re.sub(r"[^\w]", " ", normalized).split()
-        return sorted({word for word in words if word not in ignore})
+        normalized = unicodedata.normalize("NFKD", sentence.lower())
+        normalized = "".join(char for char in normalized if not unicodedata.combining(char))
+        return sorted(
+            {
+                word
+                for word in re.findall(r"\w+", normalized)
+                if len(word) > 2 and word not in self.ignore_words
+            }
+        )
 
     @staticmethod
     def _stem(word: str) -> str:
-        suffixes = (
-            "iendo",
-            "ando",
-            "ado",
-            "ido",
-            "ar",
-            "er",
-            "ir",
-            "as",
-            "os",
-            "es",
-            "s",
-            "a",
-            "o",
-            "e",
-        )
-        for suffix in suffixes:
-            if word.endswith(suffix) and len(word) > len(suffix):
+        # Deliberately small Spanish heuristic; match whole normalized stems.
+        if word.endswith("es") and len(word) > 4:
+            word = word[:-2]
+        elif word.endswith("s") and len(word) > 3:
+            word = word[:-1]
+        for suffix in ("iendo", "ando", "ado", "ido", "ar", "er", "ir", "a", "o", "e"):
+            if word.endswith(suffix) and len(word) - len(suffix) >= 3:
                 return word[: -len(suffix)]
         return word
 
 
 def score_interest(sentence: str) -> int:
     return InterestScorer().score(sentence)
-

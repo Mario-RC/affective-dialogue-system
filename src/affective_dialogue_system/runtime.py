@@ -20,16 +20,17 @@ def resolve_torch_dtype(device: str, torch_dtype: str | None = None):
     import torch
 
     if torch_dtype:
-        return getattr(torch, torch_dtype) if isinstance(torch_dtype, str) else torch_dtype
+        if torch_dtype not in {"float16", "float32", "bfloat16", "float64"}:
+            raise ValueError(f"Unsupported floating-point dtype: {torch_dtype}")
+        return getattr(torch, torch_dtype)
     return torch.float16 if device.startswith("cuda") else torch.float32
 
 
-def pipeline_device_index(device: str) -> int:
+def pipeline_device_index(device: str) -> int | str:
     """Return the device value expected by transformers pipelines."""
 
     if device.startswith("cuda"):
         if ":" in device:
             return int(device.split(":", 1)[1])
         return 0
-    return -1
-
+    return -1 if device == "cpu" else device

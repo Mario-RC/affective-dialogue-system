@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from pathlib import Path
 
 from affective_dialogue_system.config import DEFAULT_EMOTION_MODEL_BASE
 from affective_dialogue_system.emotion.labels import EMOTION_LABELS
@@ -26,7 +27,10 @@ class EmotionClassifier:
         device: str | None = None,
         max_length: int = 128,
         trust_remote_code: bool = False,
+        cache_dir: str | Path | None = None,
     ) -> None:
+        if max_length < 1:
+            raise ValueError("max_length must be positive")
         import torch
         from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
@@ -35,15 +39,19 @@ class EmotionClassifier:
         self.tokenizer = AutoTokenizer.from_pretrained(
             model_id,
             trust_remote_code=trust_remote_code,
+            cache_dir=cache_dir,
         )
         self.model = AutoModelForSequenceClassification.from_pretrained(
             model_id,
             trust_remote_code=trust_remote_code,
+            cache_dir=cache_dir,
         ).to(self.device)
         self.model.eval()
         self._torch = torch
 
     def predict(self, text: str) -> EmotionPrediction:
+        if not text.strip():
+            raise ValueError("text must not be empty")
         inputs = self.tokenizer(
             text,
             return_tensors="pt",
@@ -59,8 +67,7 @@ class EmotionClassifier:
         probabilities = self._torch.nn.functional.softmax(outputs.logits, dim=1)[0]
         labels = self._labels()
         scores = {
-            labels[idx]: float(probabilities[idx].detach().cpu())
-            for idx in range(len(labels))
+            labels[idx]: float(probabilities[idx].detach().cpu()) for idx in range(len(labels))
         }
         predicted_idx = int(self._torch.argmax(probabilities).detach().cpu())
         return EmotionPrediction(
@@ -70,10 +77,13 @@ class EmotionClassifier:
         )
 
     def _labels(self) -> list[str]:
-        id2label = getattr(self.model.config, "id2label", None) or {}
-        if id2label and len(id2label) == self.model.config.num_labels:
-            return [
-                str(id2label.get(idx, id2label.get(str(idx), EMOTION_LABELS[idx]))).lower()
-                for idx in range(len(id2label))
-            ]
-        return list(EMOTION_LABELS)
+        count = self.model.config.num_labels
+        mapping = getattr(self.model.config, "id2label", None) or {}
+        labels = [mapping.get(index, mapping.get(str(index))) for index in range(count)]
+        if all(label is not None for label in labels) and not all(
+            str(label).upper() == f"LABEL_{index}" for index, label in enumerate(labels)
+        ):
+            return [str(label).lower() for label in labels]
+        if count == len(EMOTION_LABELS):
+            return list(EMOTION_LABELS)
+        raise ValueError("Model must define id2label or use the seven project emotion labels")

@@ -15,7 +15,7 @@ class Emotion(str, Enum):
     SURPRISE = "SURPRISE"
 
     @classmethod
-    def normalize(cls, value: str | "Emotion") -> "Emotion":
+    def normalize(cls, value: str | Emotion) -> Emotion:
         if isinstance(value, Emotion):
             return value
         normalized = value.strip().replace(" ", "_").upper()
@@ -23,4 +23,3 @@ class Emotion(str, Enum):
 
 
 EMOTION_LABELS = tuple(emotion.value.lower() for emotion in Emotion)
-

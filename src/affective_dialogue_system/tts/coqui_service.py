@@ -6,12 +6,10 @@ TTS source code into this repository.
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 from affective_dialogue_system.config import DEFAULT_TTS_MODEL
 from affective_dialogue_system.runtime import resolve_device
-
 
 LANGUAGE_CODES = {
     "spanish": "es",
@@ -33,9 +31,10 @@ class CoquiTTSService:
         speaker_wav: str | Path | None = None,
         device: str | None = None,
     ) -> None:
+        if bool(model_path) != bool(config_path):
+            raise ValueError("model_path and config_path must be supplied together")
         from TTS.api import TTS
 
-        os.environ.setdefault("COQUI_TOS_AGREED", "1")
         self.device = resolve_device(device)
         self.speaker_wav = Path(speaker_wav) if speaker_wav else None
         if model_path:
@@ -49,8 +48,12 @@ class CoquiTTSService:
         *,
         language: str = "spanish",
         speaker_wav: str | Path | None = None,
-    ):
+    ) -> list[float]:
+        if not text.strip():
+            raise ValueError("text must not be empty")
         speaker = Path(speaker_wav) if speaker_wav else self.speaker_wav
+        if speaker is not None and not speaker.is_file():
+            raise FileNotFoundError(speaker)
         return self.tts.tts(
             text=text,
             speaker_wav=str(speaker) if speaker else None,
@@ -65,7 +68,11 @@ class CoquiTTSService:
         language: str = "spanish",
         speaker_wav: str | Path | None = None,
     ) -> Path:
+        if not text.strip():
+            raise ValueError("text must not be empty")
         speaker = Path(speaker_wav) if speaker_wav else self.speaker_wav
+        if speaker is not None and not speaker.is_file():
+            raise FileNotFoundError(speaker)
         output_path = Path(output_path)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         self.tts.tts_to_file(
@@ -79,7 +86,6 @@ class CoquiTTSService:
 
 def _language_code(language: str) -> str:
     try:
-        return LANGUAGE_CODES[language.lower()]
+        return LANGUAGE_CODES[language.strip().lower()]
     except KeyError as exc:
         raise ValueError(f"Unsupported language: {language}") from exc
-
