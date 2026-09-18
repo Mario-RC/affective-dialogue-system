@@ -15,9 +15,14 @@ class AffectiveDialogueSystem:
         self,
         dialogue_engine: AffectiveDialogueEngine,
         emotion_classifier: EmotionClassifier | None = None,
+        *,
+        max_history_turns: int = 20,
     ) -> None:
+        if max_history_turns < 1:
+            raise ValueError("max_history_turns must be positive")
         self.dialogue_engine = dialogue_engine
         self.emotion_classifier = emotion_classifier
+        self.max_history_turns = max_history_turns
         self.turns: list[DialogueTurn] = []
 
     def reply(
@@ -27,6 +32,8 @@ class AffectiveDialogueSystem:
         user_emotion: Emotion | str | None = None,
         second_emotion: Emotion | str = Emotion.NEUTRAL,
     ) -> AssistantResponse:
+        if not text.strip():
+            raise ValueError("text must not be empty")
         if user_emotion is None:
             if self.emotion_classifier is None:
                 user_emotion = Emotion.NEUTRAL
@@ -40,8 +47,9 @@ class AffectiveDialogueSystem:
             text,
             AssistantResponse.placeholder(user_emotion, Emotion.normalize(second_emotion)),
         )
-        self.turns.append(turn)
-        response = self.dialogue_engine.generate(self.turns)
-        self.turns[-1] = DialogueTurn(user_emotion, text, response)
+        history = [*self.turns, turn][-self.max_history_turns :]
+        response = self.dialogue_engine.generate(history)
+        self.turns = [*self.turns, DialogueTurn(user_emotion, text, response)][
+            -self.max_history_turns :
+        ]
         return response
-

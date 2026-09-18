@@ -13,4 +13,3 @@ __all__ = [
     "parse_emotional_response",
     "seed_dialogue",
 ]
-

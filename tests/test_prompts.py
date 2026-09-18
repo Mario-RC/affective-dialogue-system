@@ -1,6 +1,11 @@
 import unittest
 
-from affective_dialogue_system.dialogue import AssistantResponse, DialogueTurn, build_prompt, seed_dialogue
+from affective_dialogue_system.dialogue import (
+    AssistantResponse,
+    DialogueTurn,
+    build_prompt,
+    seed_dialogue,
+)
 from affective_dialogue_system.emotion import Emotion
 
 
@@ -28,4 +33,3 @@ class PromptBuilderTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

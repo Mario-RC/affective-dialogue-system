@@ -2,14 +2,15 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import re
+from dataclasses import dataclass
 
 from affective_dialogue_system.dialogue.schemas import AssistantResponse
 from affective_dialogue_system.emotion.labels import Emotion
 
-
-_TAG_RE = re.compile(r"\(([^)]+)\)")
+_TAG_RE = re.compile(
+    r"\((" + "|".join(emotion.value for emotion in Emotion) + r")\)", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,7 @@ def parse_emotional_response(
     text: str,
     *,
     fallback: ParseFallback | None = None,
+    expected_emotions: tuple[Emotion, Emotion] | None = None,
 ) -> AssistantResponse:
     """Parse ``(EMOTION) text`` triples from generated text.
 
@@ -30,7 +32,7 @@ def parse_emotional_response(
     """
 
     matches = list(_TAG_RE.finditer(text))
-    if len(matches) >= 3:
+    if len(matches) == 3 and not text[: matches[0].start()].strip():
         try:
             first_emotion = Emotion.normalize(matches[0].group(1))
             second_emotion = Emotion.normalize(matches[1].group(1))
@@ -38,6 +40,10 @@ def parse_emotional_response(
             first_text = _segment(text, matches, 0)
             second_text = _segment(text, matches, 1)
             third_text = _segment(text, matches, 2)
+            if third_emotion != Emotion.NEUTRAL or not all((first_text, second_text, third_text)):
+                raise ValueError("Expected three nonempty segments ending in NEUTRAL")
+            if expected_emotions and (first_emotion, second_emotion) != expected_emotions:
+                raise ValueError("Generated emotions do not match the requested emotions")
             return AssistantResponse(
                 first_emotion,
                 first_text,
@@ -57,7 +63,7 @@ def parse_emotional_response(
 def _segment(text: str, matches: list[re.Match[str]], index: int) -> str:
     start = matches[index].end()
     end = matches[index + 1].start() if index + 1 < len(matches) else len(text)
-    return text[start:end].strip().strip(".").strip()
+    return text[start:end].strip()
 
 
 def _fallback_response(fallback: ParseFallback) -> AssistantResponse:
@@ -76,6 +82,5 @@ def _fallback_response(fallback: ParseFallback) -> AssistantResponse:
         fallback.second_emotion,
         "No te he entendido con claridad.",
         Emotion.NEUTRAL,
-        "Podrias contarme un poco mas sobre lo que quieres decir?",
+        "¿Podrías contarme un poco más sobre lo que quieres decir?",
     )
-

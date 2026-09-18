@@ -21,7 +21,7 @@ class AssistantResponse:
         cls,
         user_emotion: Emotion,
         second_emotion: Emotion = Emotion.NEUTRAL,
-    ) -> "AssistantResponse":
+    ) -> AssistantResponse:
         return cls(user_emotion, "", second_emotion, "", Emotion.NEUTRAL, "")
 
     def format(self) -> str:
@@ -44,6 +44,5 @@ class DialogueTurn:
         user_emotion: str | Emotion,
         user_text: str,
         assistant: AssistantResponse | None = None,
-    ) -> "DialogueTurn":
+    ) -> DialogueTurn:
         return cls(Emotion.normalize(user_emotion), user_text, assistant)
-

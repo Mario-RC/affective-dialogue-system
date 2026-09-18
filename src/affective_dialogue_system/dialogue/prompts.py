@@ -11,6 +11,8 @@ from affective_dialogue_system.emotion.labels import Emotion
 def seed_dialogue(language: str = "en") -> list[DialogueTurn]:
     """Return a short stable seed conversation for demos and tests."""
 
+    if language not in {"en", "es"}:
+        raise ValueError(f"Unsupported language: {language}")
     if language == "es":
         return [
             DialogueTurn(
@@ -87,6 +89,20 @@ def build_prompt(
         raise ValueError(f"Unsupported template: {template}")
     if language not in {"en", "es"}:
         raise ValueError(f"Unsupported language: {language}")
+    if any(not turn.user_text.strip() for turn in turns):
+        raise ValueError("User messages must not be empty")
+    if any(
+        turn.assistant is None
+        or not all(
+            (
+                turn.assistant.first_text.strip(),
+                turn.assistant.second_text.strip(),
+                turn.assistant.third_text.strip(),
+            )
+        )
+        for turn in turns[:-1]
+    ):
+        raise ValueError("Historical turns must contain completed assistant responses")
 
     if template == "llama3":
         return _build_llama3_prompt(turns, language, human_name, assistant_name)
@@ -107,7 +123,9 @@ def _context_lines(turns: Sequence[DialogueTurn], language: str) -> str:
     return "\n".join(lines)
 
 
-def _rules(turns: Sequence[DialogueTurn], language: str, human_name: str, assistant_name: str) -> str:
+def _rules(
+    turns: Sequence[DialogueTurn], language: str, human_name: str, assistant_name: str
+) -> str:
     latest = turns[-1]
     assistant = latest.assistant or AssistantResponse.placeholder(latest.user_emotion)
     if language == "es":
@@ -140,7 +158,9 @@ The human name is {human_name}. The chatbot name is {assistant_name}.
 Answer in a single turn and follow exactly the emotional structure."""
 
 
-def _completion(turns: Sequence[DialogueTurn], *, user_start: str, assistant_start: str, end: str) -> str:
+def _completion(
+    turns: Sequence[DialogueTurn], *, user_start: str, assistant_start: str, end: str
+) -> str:
     chunks = []
     for idx, turn in enumerate(turns):
         chunks.append(f"({turn.user_emotion.value}) {turn.user_text}{end}\n{assistant_start}\n")
@@ -156,13 +176,17 @@ def _build_gemma_prompt(
     assistant_name: str,
 ) -> str:
     system = (
-        "<bos>"
-        + ("Eres un experto en la creacion de dialogos." if language == "es" else "You are an expert at creating dialogues.")
+        "<bos><start_of_turn>user\n"
+        + (
+            "Eres un experto en la creacion de dialogos."
+            if language == "es"
+            else "You are an expert at creating dialogues."
+        )
         + "\n\nDialogue and emotional structure:\n"
         + _context_lines(turns, language)
         + "\n\n"
         + _rules(turns, language, human_name, assistant_name)
-        + "<start_of_turn>user\n"
+        + "\n\n"
     )
     return system + _completion(
         turns,
@@ -178,7 +202,11 @@ def _build_llama3_prompt(
     human_name: str,
     assistant_name: str,
 ) -> str:
-    system_text = "Eres un experto en la creacion de dialogos." if language == "es" else "You are an expert at creating dialogues."
+    system_text = (
+        "Eres un experto en la creacion de dialogos."
+        if language == "es"
+        else "You are an expert at creating dialogues."
+    )
     system = (
         "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\n"
         + system_text
@@ -194,4 +222,3 @@ def _build_llama3_prompt(
         assistant_start="<|start_header_id|>assistant<|end_header_id|>",
         end="<|eot_id|>",
     )
-
