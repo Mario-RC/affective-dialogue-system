@@ -2,6 +2,10 @@
 __pycache__/
 *.py[cod]
 *.egg-info/
+build/
+dist/
+.coverage
+htmlcov/
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
@@ -40,6 +44,8 @@ artifacts/
 .codex/
 .agents/
 
+# Local archive (never commit)
+/local/
+
 # Keep placeholders
 !assets/audio_samples/.gitkeep
-
