@@ -11,7 +11,6 @@ from affective_dialogue_system.config import (
     DEFAULT_EMOTIONAL_GPT2_MODEL,
 )
 
-
 DEFAULT_MODELS = [
     DEFAULT_DIALOGUE_MODEL,
     DEFAULT_EMOTIONAL_GPT2_MODEL,
@@ -35,4 +34,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

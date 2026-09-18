@@ -8,4 +8,3 @@ and speech synthesis.
 from affective_dialogue_system.config import ModelConfig
 
 __all__ = ["ModelConfig"]
-

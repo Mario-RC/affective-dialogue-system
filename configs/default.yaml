@@ -10,10 +10,34 @@ runtime:
   device: null
   trust_remote_code: false
   cache_dir: null
+  torch_dtype: null
 
 dialogue:
   template: gemma
   language: es
   human_name: Human
   assistant_name: Ray
+  max_history_turns: 20
+  max_new_tokens: 96
+  temperature: 0.7
+  top_p: 0.9
+  do_sample: true
 
+safety:
+  enabled: true
+  local_rules: true
+  detoxify:
+    enabled: false
+    model_type: multilingual
+    checkpoint: null
+  llama_guard:
+    enabled: false
+    model: meta-llama/Meta-Llama-Guard-2-8B
+
+selecting_strategy:
+  glucose_threshold_mg_dl: 69
+  topic_max_consecutive_turns: 5
+  timeout_seconds: 30
+  llm_timeout_seconds: 2
+  rule_based_templates: legacy
+  skip_rule_based_catch_all: true
