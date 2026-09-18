@@ -12,9 +12,9 @@ from threading import Lock
 from time import monotonic
 
 from affective_dialogue_system.dialogue.schemas import AssistantResponse
-from affective_dialogue_system.safety import SafetyFilter
 from affective_dialogue_system.strategy.context import DialogueContext, StrategyResult
 from affective_dialogue_system.strategy.responses import fallback_response
+from affective_dialogue_system.toxicity import ToxicityFilter
 
 logger = logging.getLogger(__name__)
 GeneratedResponse = str | AssistantResponse | StrategyResult
@@ -32,7 +32,7 @@ class LLMHandler:
     Call ``close`` when the owning conversation/service is finished.
     """
 
-    safety_filter: SafetyFilter
+    toxicity_filter: ToxicityFilter
     primary_generator: ResponseGenerator | None = None
     fallback_generator: ResponseGenerator | None = None
     fallback_translator: Translator | None = None
@@ -123,13 +123,13 @@ class LLMHandler:
                 )
             if not isinstance(result.response, str) or not result.response.strip():
                 return None
-            safety = self.safety_filter.check(result.response, role="assistant")
-            if safety.flagged:
+            toxicity = self.toxicity_filter.check(result.response, role="assistant")
+            if toxicity.flagged:
                 return None
             for part in (result.emotional_response, result.follow_up_question):
-                if part and self.safety_filter.check(part, role="assistant").flagged:
+                if part and self.toxicity_filter.check(part, role="assistant").flagged:
                     return None
-            return replace(result, source=source, safety=safety)
+            return replace(result, source=source, toxicity=toxicity)
         except Exception as exc:
             # Avoid logging user messages or raw model output.
             logger.warning("%s candidate failed (%s)", source, type(exc).__name__)

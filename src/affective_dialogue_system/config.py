@@ -85,7 +85,7 @@ class LlamaGuardConfig:
 
 
 @dataclass(frozen=True)
-class SafetyConfig:
+class ToxicityConfig:
     enabled: bool = True
     local_rules: bool = True
     detoxify: DetoxifyConfig = field(default_factory=DetoxifyConfig)
@@ -95,7 +95,7 @@ class SafetyConfig:
         if self.enabled and not (
             self.local_rules or self.detoxify.enabled or self.llama_guard.enabled
         ):
-            raise ValueError("Enabled safety requires at least one detector")
+            raise ValueError("Enabled toxicity filtering requires at least one detector")
 
 
 @dataclass(frozen=True)
@@ -127,7 +127,7 @@ class AppConfig:
     models: ModelConfig = field(default_factory=ModelConfig)
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
     dialogue: DialogueConfig = field(default_factory=DialogueConfig)
-    safety: SafetyConfig = field(default_factory=SafetyConfig)
+    toxicity: ToxicityConfig = field(default_factory=ToxicityConfig)
     selecting_strategy: StrategyConfig = field(default_factory=StrategyConfig)
 
 

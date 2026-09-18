@@ -46,7 +46,7 @@ def test_environment_overrides_yaml(tmp_path):
         "dialogue: {language: fr}",
         "selecting_strategy: {llm_timeout_seconds: -1}",
         "selecting_strategy: {topic_max_consecutive_turns: 0}",
-        "safety: {enabled: true, local_rules: false}",
+        "toxicity: {enabled: true, local_rules: false}",
         "models: {dialogue: ''}",
         "runtime: {cache_dir: 123}",
         "runtime: []",
@@ -77,7 +77,7 @@ def test_configuration_changes_runtime_selection(tmp_path):
 def test_cli_basic_commands(capsys):
     assert main(["interest", "Siento dolor"]) == 0
     assert capsys.readouterr().out.strip() == "100"
-    assert main(["safety", "Hola, hablemos de música"]) == 0
+    assert main(["toxicity", "Hola, hablemos de música"]) == 0
     assert capsys.readouterr().out.strip() == "safe"
     assert main(["select", "hola"]) == 0
     assert capsys.readouterr().out.startswith("rule_based\t")

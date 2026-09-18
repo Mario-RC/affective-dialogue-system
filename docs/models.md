@@ -78,10 +78,10 @@ Custom `model_path` and `config_path` must be supplied together. The wrapper doe
 not automatically accept model terms on the caller's behalf; complete any required
 upstream model-access steps separately.
 
-## Optional moderation
+## Optional toxicity detectors
 
-Enable `safety.detoxify.enabled` or `safety.llama_guard.enabled` in YAML after
-installing `.[safety]`. Both are disabled by default. Model availability and access
+Enable `toxicity.detoxify.enabled` or `toxicity.llama_guard.enabled` in YAML after
+installing `.[toxicity]`. Both are disabled by default. Model availability and access
 requirements are independent of package installation.
 
 Llama Guard 2 emits `safe` or `unsafe` plus S1–S11 category codes. The adapter maps

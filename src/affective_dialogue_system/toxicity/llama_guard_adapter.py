@@ -7,26 +7,26 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from affective_dialogue_system.runtime import resolve_device, resolve_torch_dtype
-from affective_dialogue_system.safety.schemas import SafetyCategory, SafetyResult
+from affective_dialogue_system.toxicity.schemas import ToxicityCategory, ToxicityResult
 
 # https://huggingface.co/meta-llama/Meta-Llama-Guard-2-8B#harm-taxonomy-and-policy
 LLAMA_GUARD_CATEGORY_MAP = {
-    "S1": SafetyCategory.VIOLENCE_AND_HATE,
-    "S2": SafetyCategory.CRIMINAL_PLANNING,
-    "S3": SafetyCategory.SEXUAL_EXPLICIT,
-    "S4": SafetyCategory.SEXUAL_EXPLICIT,
-    "S5": SafetyCategory.PROHIBITED_TERM,
-    "S6": SafetyCategory.PROHIBITED_TERM,
-    "S7": SafetyCategory.PROHIBITED_TERM,
-    "S8": SafetyCategory.GUNS_AND_ILLEGAL_WEAPONS,
-    "S9": SafetyCategory.IDENTITY_ATTACK,
-    "S10": SafetyCategory.SELF_HARM,
-    "S11": SafetyCategory.SEXUAL_EXPLICIT,
+    "S1": ToxicityCategory.VIOLENCE_AND_HATE,
+    "S2": ToxicityCategory.CRIMINAL_PLANNING,
+    "S3": ToxicityCategory.SEXUAL_EXPLICIT,
+    "S4": ToxicityCategory.SEXUAL_EXPLICIT,
+    "S5": ToxicityCategory.PROHIBITED_TERM,
+    "S6": ToxicityCategory.PROHIBITED_TERM,
+    "S7": ToxicityCategory.PROHIBITED_TERM,
+    "S8": ToxicityCategory.GUNS_AND_ILLEGAL_WEAPONS,
+    "S9": ToxicityCategory.IDENTITY_ATTACK,
+    "S10": ToxicityCategory.SELF_HARM,
+    "S11": ToxicityCategory.SEXUAL_EXPLICIT,
 }
 
 
 @dataclass
-class LlamaGuardSafetyDetector:
+class LlamaGuardToxicityDetector:
     model_id: str = "meta-llama/Meta-Llama-Guard-2-8B"
     device: str | None = None
     cache_dir: str | Path | None = None
@@ -43,10 +43,10 @@ class LlamaGuardSafetyDetector:
         ).to(self.device)
         self.model.eval()
 
-    def check(self, text: str) -> SafetyResult:
+    def check(self, text: str) -> ToxicityResult:
         return self._check_chat([{"role": "user", "content": text}])
 
-    def check_response(self, text: str) -> SafetyResult:
+    def check_response(self, text: str) -> ToxicityResult:
         return self._check_chat(
             [
                 {"role": "user", "content": ""},
@@ -54,7 +54,7 @@ class LlamaGuardSafetyDetector:
             ]
         )
 
-    def _check_chat(self, chat: list[dict[str, str]]) -> SafetyResult:
+    def _check_chat(self, chat: list[dict[str, str]]) -> ToxicityResult:
         import torch
 
         input_ids = self.tokenizer.apply_chat_template(chat, return_tensors="pt").to(self.device)
@@ -64,19 +64,19 @@ class LlamaGuardSafetyDetector:
         return parse_llama_guard_output(result)
 
 
-def parse_llama_guard_output(output: str) -> SafetyResult:
+def parse_llama_guard_output(output: str) -> ToxicityResult:
     """Only an explicit standalone 'safe' verdict passes; malformed output is flagged."""
     lines = [line.strip() for line in output.splitlines() if line.strip()]
     if len(lines) == 1 and lines[0].lower() == "safe":
-        return SafetyResult.safe()
+        return ToxicityResult.safe()
     codes = (
         re.findall(r"\bS\d+\b", " ".join(lines[1:]))
         if lines and lines[0].lower() == "unsafe"
         else []
     )
     code = codes[0] if codes else "unknown"
-    return SafetyResult.flagged_result(
-        LLAMA_GUARD_CATEGORY_MAP.get(code, SafetyCategory.PROHIBITED_TERM),
+    return ToxicityResult.flagged_result(
+        LLAMA_GUARD_CATEGORY_MAP.get(code, ToxicityCategory.PROHIBITED_TERM),
         source="llama_guard",
         matched_text=",".join(codes) if codes else code,
     )

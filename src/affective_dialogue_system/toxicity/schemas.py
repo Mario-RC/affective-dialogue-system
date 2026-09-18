@@ -1,4 +1,4 @@
-"""Safety classification data structures."""
+"""Toxicity classification data structures."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 
 
-class SafetyCategory(str, Enum):
+class ToxicityCategory(str, Enum):
     SAFE = "safe"
     OBSCENE = "obscene"
     THREAT = "threat"
@@ -22,28 +22,28 @@ class SafetyCategory(str, Enum):
 
 
 @dataclass(frozen=True)
-class SafetyResult:
+class ToxicityResult:
     flagged: bool
-    category: SafetyCategory = SafetyCategory.SAFE
+    category: ToxicityCategory = ToxicityCategory.SAFE
     source: str = "none"
     score: float = 0.0
     labels: dict[str, float] = field(default_factory=dict)
     matched_text: str | None = None
 
     @classmethod
-    def safe(cls) -> SafetyResult:
+    def safe(cls) -> ToxicityResult:
         return cls(flagged=False)
 
     @classmethod
     def flagged_result(
         cls,
-        category: SafetyCategory,
+        category: ToxicityCategory,
         *,
         source: str,
         score: float = 1.0,
         labels: dict[str, float] | None = None,
         matched_text: str | None = None,
-    ) -> SafetyResult:
+    ) -> ToxicityResult:
         return cls(
             flagged=True,
             category=category,

@@ -5,7 +5,6 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime
 
-from affective_dialogue_system.safety import SafetyFilter
 from affective_dialogue_system.strategy.context import DialogueContext, StrategyResult
 from affective_dialogue_system.strategy.llm_handler import (
     LLMHandler,
@@ -20,6 +19,7 @@ from affective_dialogue_system.strategy.protocols import (
 )
 from affective_dialogue_system.strategy.rule_based_handler import RuleBasedHandler
 from affective_dialogue_system.strategy.toxicity_handler import ToxicityFilterHandler
+from affective_dialogue_system.toxicity import ToxicityFilter
 
 
 @dataclass
@@ -32,11 +32,11 @@ class SelectingStrategy:
     3. Topic monitoring.
     4. Toxicity filter on user input.
     5. Rule-based deterministic template responses.
-    6. Parallel LLM generation with output safety filtering.
+    6. Parallel LLM generation with output toxicity filtering.
     7. Deterministic fallback response.
     """
 
-    safety_filter: SafetyFilter = field(default_factory=SafetyFilter.default)
+    toxicity_filter: ToxicityFilter = field(default_factory=ToxicityFilter.default)
     glucose_protocol: GlucoseMonitoringProtocol = field(default_factory=GlucoseMonitoringProtocol)
     timeout_protocol: TimeoutProtocol = field(default_factory=TimeoutProtocol)
     topic_protocol: TopicMonitoringProtocol = field(default_factory=TopicMonitoringProtocol)
@@ -49,7 +49,7 @@ class SelectingStrategy:
 
     def __post_init__(self) -> None:
         self._llm_handler = LLMHandler(
-            safety_filter=self.safety_filter,
+            toxicity_filter=self.toxicity_filter,
             primary_generator=self.primary_generator,
             fallback_generator=self.fallback_generator,
             fallback_translator=self.fallback_translator,
@@ -81,18 +81,18 @@ class SelectingStrategy:
         if result is not None:
             return result
 
-        toxicity = ToxicityFilterHandler(self.safety_filter).handle(context)
-        if toxicity:
-            return toxicity
+        result = ToxicityFilterHandler(self.toxicity_filter).handle(context)
+        if result:
+            return result
 
         rule_based = self.rule_based_handler.handle(context)
         if rule_based:
-            safety = self.safety_filter.check(rule_based.response, role="assistant")
-            if not safety.flagged:
+            toxicity = self.toxicity_filter.check(rule_based.response, role="assistant")
+            if not toxicity.flagged:
                 return StrategyResult.from_parts(
                     response=rule_based.response,
                     source=rule_based.source,
-                    safety=safety,
+                    toxicity=toxicity,
                     metadata=rule_based.metadata,
                 )
 

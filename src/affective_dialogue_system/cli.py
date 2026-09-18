@@ -15,12 +15,12 @@ from affective_dialogue_system.emotion.classifier import EmotionClassifier
 from affective_dialogue_system.emotion.labels import Emotion
 from affective_dialogue_system.factory import (
     create_dialogue_engine,
-    create_safety_filter,
     create_strategy,
+    create_toxicity_filter,
 )
 from affective_dialogue_system.interest.scorer import score_interest
-from affective_dialogue_system.safety import safety_response
 from affective_dialogue_system.strategy import DialogueContext
+from affective_dialogue_system.toxicity import toxicity_response
 
 
 def _nonnegative_float(value: str) -> float:
@@ -40,9 +40,9 @@ def build_parser() -> argparse.ArgumentParser:
     emotion.add_argument("text")
     emotion.add_argument("--model")
     for name, help_text in (
-        ("safety", "Check text with the configured safety detectors"),
+        ("toxicity", "Check text with the configured toxicity detectors"),
         ("select", "Run response selection without loading a dialogue LLM"),
-        ("chat", "Generate one emotional response with input/output safety checks"),
+        ("chat", "Generate one emotional response with input/output toxicity checks"),
     ):
         command = subparsers.add_parser(name, help=help_text)
         command.add_argument("text")
@@ -77,7 +77,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.error(str(exc))
     except ImportError as exc:
         parser.error(
-            f"Missing optional dependency {exc.name!r}; install the required [ml], [safety], or [tts] extra"
+            f"Missing optional dependency {exc.name!r}; install the required [ml], [toxicity], or [tts] extra"
         )
     return 2
 
@@ -100,8 +100,8 @@ def _run(args: argparse.Namespace) -> int:
         prediction = classifier.predict(args.text)
         print(f"{prediction.label}\t{prediction.confidence:.4f}")
         return 0
-    if args.command == "safety":
-        result = create_safety_filter(config).check(args.text)
+    if args.command == "toxicity":
+        result = create_toxicity_filter(config).check(args.text)
         print(f"unsafe\t{result.category.value}\t{result.source}" if result.flagged else "safe")
         return 0
     if args.command == "select":
@@ -133,10 +133,10 @@ def _run(args: argparse.Namespace) -> int:
     config = replace(config, dialogue=replace(config.dialogue, language=language))
     if args.model:
         config = replace(config, models=replace(config.models, dialogue_model=args.model))
-    safety = create_safety_filter(config)
-    incoming = safety.check(args.text)
+    toxicity = create_toxicity_filter(config)
+    incoming = toxicity.check(args.text)
     if incoming.flagged:
-        print(safety_response(incoming.category, language))
+        print(toxicity_response(incoming.category, language))
         return 0
     engine = create_dialogue_engine(config)
     turns = seed_dialogue(language)
@@ -148,8 +148,8 @@ def _run(args: argparse.Namespace) -> int:
         )
     )
     response = engine.generate(turns).format()
-    outgoing = safety.check(response, role="assistant")
-    print(safety_response(outgoing.category, language) if outgoing.flagged else response)
+    outgoing = toxicity.check(response, role="assistant")
+    print(toxicity_response(outgoing.category, language) if outgoing.flagged else response)
     return 0
 
 

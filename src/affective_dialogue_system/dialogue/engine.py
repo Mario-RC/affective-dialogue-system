@@ -32,7 +32,7 @@ class GenerationSettings:
 
 
 class AffectiveDialogueEngine:
-    """Generate emotional triples. Safety orchestration belongs to SelectingStrategy."""
+    """Generate emotional triples. Toxicity filtering belongs to SelectingStrategy."""
 
     def __init__(
         self,

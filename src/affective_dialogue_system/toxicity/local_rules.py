@@ -1,7 +1,7 @@
 """Local multilingual rule-based toxicity checks.
 
 The local rule set is adapted from the thesis-era Ray toxicity prototype. It is
-intended as a fast safety gate and as a deterministic fallback when heavier
+intended as a fast toxicity gate and as a deterministic fallback when heavier
 moderation models are unavailable.
 """
 
@@ -13,7 +13,7 @@ import unicodedata
 from dataclasses import dataclass, field
 from importlib import resources
 
-from affective_dialogue_system.safety.schemas import SafetyCategory, SafetyResult
+from affective_dialogue_system.toxicity.schemas import ToxicityCategory, ToxicityResult
 
 SPECIAL_CHARS = '!"#$%&()+,./:;<=>?[\\]^_`{|}~'
 
@@ -67,58 +67,58 @@ ADD_TO_BLACKLIST = {
     "dirty talk",
 }
 
-CATEGORY_PATTERNS: tuple[tuple[SafetyCategory, tuple[str, ...]], ...] = (
+CATEGORY_PATTERNS: tuple[tuple[ToxicityCategory, tuple[str, ...]], ...] = (
     (
-        SafetyCategory.SELF_HARM,
+        ToxicityCategory.SELF_HARM,
         (
             r"\b(self[- ]?harm|kill myself|hurt myself|suicide)\b",
             r"\b(suicidarme|hacerme dano|quitarme la vida|autolesion)\b",
         ),
     ),
     (
-        SafetyCategory.THREAT,
+        ToxicityCategory.THREAT,
         (
             r"\b(i will kill|i am going to kill|i will hurt|i will attack)\b",
             r"\b(te voy a matar|voy a matarte|te hare dano|voy a atacarte)\b",
         ),
     ),
     (
-        SafetyCategory.CRIMINAL_PLANNING,
+        ToxicityCategory.CRIMINAL_PLANNING,
         (
             r"\b(how to rob|how to steal|plan a robbery|hide a body)\b",
             r"\b(como robar|planear un robo|ocultar un cuerpo)\b",
         ),
     ),
     (
-        SafetyCategory.GUNS_AND_ILLEGAL_WEAPONS,
+        ToxicityCategory.GUNS_AND_ILLEGAL_WEAPONS,
         (
             r"\b(illegal weapon|unregistered gun|make a bomb)\b",
             r"\b(arma ilegal|pistola ilegal|fabricar una bomba)\b",
         ),
     ),
     (
-        SafetyCategory.REGULATED_OR_CONTROLLED_SUBSTANCES,
+        ToxicityCategory.REGULATED_OR_CONTROLLED_SUBSTANCES,
         (
             r"\b(sell drugs|make cocaine|make meth)\b",
             r"\b(vender droga|fabricar cocaina|fabricar metanfetamina)\b",
         ),
     ),
     (
-        SafetyCategory.SEXUAL_EXPLICIT,
+        ToxicityCategory.SEXUAL_EXPLICIT,
         (
             r"\b(explicit sexual|pornographic|sexual act)\b",
             r"\b(sexual explicito|pornografico|acto sexual)\b",
         ),
     ),
     (
-        SafetyCategory.VIOLENCE_AND_HATE,
+        ToxicityCategory.VIOLENCE_AND_HATE,
         (
             r"\b(exterminate|violent hate|hate all)\b",
             r"\b(exterminar|odio violento|odio a todos)\b",
         ),
     ),
     (
-        SafetyCategory.INSULT,
+        ToxicityCategory.INSULT,
         (
             r"\b(idiot|moron|shut up)\b",
             r"\b(idiota|imbecil|callate|gilipollas)\b",
@@ -128,12 +128,12 @@ CATEGORY_PATTERNS: tuple[tuple[SafetyCategory, tuple[str, ...]], ...] = (
 
 
 @dataclass
-class LocalRuleSafetyDetector:
+class LocalRuleToxicityDetector:
     offensive_phrases: set[str] = field(default_factory=set)
     prohibited_terms: set[str] = field(default_factory=set)
 
     @classmethod
-    def from_package_data(cls) -> LocalRuleSafetyDetector:
+    def from_package_data(cls) -> LocalRuleToxicityDetector:
         offensive = _load_resource_lines("offensive_phrases_preprocessed.txt")
         prohibited = _load_resource_lines("prohibited_terms.txt")
         offensive = (offensive - {_normalize_text(item) for item in REMOVE_FROM_BLACKLIST}) | {
@@ -141,15 +141,15 @@ class LocalRuleSafetyDetector:
         }
         return cls(offensive_phrases=offensive, prohibited_terms=prohibited)
 
-    def check(self, text: str) -> SafetyResult:
+    def check(self, text: str) -> ToxicityResult:
         normalized = _remove_whitelisted_phrases(_normalize_text(text))
         if not normalized:
-            return SafetyResult.safe()
+            return ToxicityResult.safe()
 
         for category, patterns in CATEGORY_PATTERNS:
             for pattern in patterns:
                 if re.search(pattern, normalized):
-                    return SafetyResult.flagged_result(
+                    return ToxicityResult.flagged_result(
                         category,
                         source="local_pattern",
                         matched_text=pattern,
@@ -157,21 +157,21 @@ class LocalRuleSafetyDetector:
 
         matched_prohibited = self._contains_phrase(normalized, self.prohibited_terms)
         if matched_prohibited:
-            return SafetyResult.flagged_result(
-                SafetyCategory.PROHIBITED_TERM,
+            return ToxicityResult.flagged_result(
+                ToxicityCategory.PROHIBITED_TERM,
                 source="local_prohibited_terms",
                 matched_text=matched_prohibited,
             )
 
         matched_offensive = self._contains_phrase(normalized, self.offensive_phrases)
         if matched_offensive:
-            return SafetyResult.flagged_result(
-                SafetyCategory.PROHIBITED_TERM,
+            return ToxicityResult.flagged_result(
+                ToxicityCategory.PROHIBITED_TERM,
                 source="local_offensive_phrases",
                 matched_text=matched_offensive,
             )
 
-        return SafetyResult.safe()
+        return ToxicityResult.safe()
 
     def _contains_phrase(self, text: str, phrases: set[str]) -> str | None:
         text_variants = _text_variants(text)
@@ -190,7 +190,7 @@ class LocalRuleSafetyDetector:
 
 
 def _load_resource_lines(filename: str) -> set[str]:
-    data = resources.files("affective_dialogue_system.safety.data").joinpath(filename)
+    data = resources.files("affective_dialogue_system.toxicity.data").joinpath(filename)
     with data.open("r", encoding="utf-8") as handle:
         return {_normalize_text(line) for line in handle if _normalize_text(line)}
 

@@ -3,9 +3,9 @@ from time import monotonic
 
 import pytest
 
-from affective_dialogue_system.safety import SafetyFilter
 from affective_dialogue_system.strategy import DialogueContext, StrategyResult
 from affective_dialogue_system.strategy.llm_handler import LLMHandler
+from affective_dialogue_system.toxicity import ToxicityFilter
 
 
 def test_timeout_returns_while_generator_is_still_running_and_bounds_jobs():
@@ -18,7 +18,7 @@ def test_timeout_returns_while_generator_is_still_running_and_bounds_jobs():
         release.wait(2)
         return "late response"
 
-    handler = LLMHandler(SafetyFilter(), primary_generator=slow, timeout_seconds=0.03)
+    handler = LLMHandler(ToxicityFilter(), primary_generator=slow, timeout_seconds=0.03)
     try:
         started = monotonic()
         assert handler.handle(DialogueContext()) is None
@@ -40,7 +40,7 @@ def test_fast_candidate_does_not_wait_for_slow_loser():
         return "slow"
 
     handler = LLMHandler(
-        SafetyFilter(), primary_generator=slow, fallback_generator=lambda _: "ready"
+        ToxicityFilter(), primary_generator=slow, fallback_generator=lambda _: "ready"
     )
     try:
         started = monotonic()
@@ -59,7 +59,7 @@ def test_translation_is_included_in_the_deadline():
         return "traducido"
 
     handler = LLMHandler(
-        SafetyFilter(),
+        ToxicityFilter(),
         fallback_generator=lambda _: "ready",
         fallback_translator=translate,
         timeout_seconds=0.03,
@@ -87,7 +87,7 @@ def test_candidate_contexts_are_isolated_from_caller_and_each_other():
         assert entered.wait(1)
         return copy.metadata["nested"]["value"]
 
-    handler = LLMHandler(SafetyFilter(), primary, fallback)
+    handler = LLMHandler(ToxicityFilter(), primary, fallback)
     try:
         assert handler.handle(context).response == "original"
         assert context.metadata["nested"]["value"] == "original"
@@ -98,7 +98,7 @@ def test_candidate_contexts_are_isolated_from_caller_and_each_other():
 
 @pytest.mark.parametrize("generated", [None, " ", 42])
 def test_empty_or_invalid_candidates_are_discarded(generated):
-    handler = LLMHandler(SafetyFilter(), primary_generator=lambda _: generated)
+    handler = LLMHandler(ToxicityFilter(), primary_generator=lambda _: generated)
     try:
         assert handler.handle(DialogueContext()) is None
     finally:
@@ -110,14 +110,14 @@ def test_generator_and_translator_failures_allow_other_candidate():
         raise RuntimeError("failure")
 
     handler = LLMHandler(
-        SafetyFilter(), primary_generator=broken, fallback_generator=lambda _: "valid"
+        ToxicityFilter(), primary_generator=broken, fallback_generator=lambda _: "valid"
     )
     try:
         assert handler.handle(DialogueContext()).response == "valid"
     finally:
         handler.close(wait_for_running=True)
     handler = LLMHandler(
-        SafetyFilter(), fallback_generator=lambda _: "valid", fallback_translator=broken
+        ToxicityFilter(), fallback_generator=lambda _: "valid", fallback_translator=broken
     )
     try:
         assert handler.handle(DialogueContext()) is None
@@ -134,7 +134,7 @@ def test_result_preserves_session_end_and_translates_visible_parts():
         should_end_session=True,
     )
     handler = LLMHandler(
-        SafetyFilter(),
+        ToxicityFilter(),
         fallback_generator=lambda _: result,
         fallback_translator=lambda text, _: "ES:" + text,
     )
@@ -150,7 +150,7 @@ def test_result_preserves_session_end_and_translates_visible_parts():
 
 def test_unsafe_separate_fields_are_not_delivered():
     handler = LLMHandler(
-        SafetyFilter.default(),
+        ToxicityFilter.default(),
         primary_generator=lambda _: StrategyResult(
             "Hello", "x", follow_up_question="Eres un idiota"
         ),
@@ -162,7 +162,7 @@ def test_unsafe_separate_fields_are_not_delivered():
 
 
 def test_closed_handler_rejects_new_jobs():
-    handler = LLMHandler(SafetyFilter())
+    handler = LLMHandler(ToxicityFilter())
     handler.close()
     with pytest.raises(RuntimeError, match="closed"):
         handler.handle(DialogueContext())

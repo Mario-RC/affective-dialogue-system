@@ -23,7 +23,7 @@ dialogue:
   top_p: 0.9
   do_sample: true
 
-safety:
+toxicity:
   enabled: true
   local_rules: true
   detoxify:

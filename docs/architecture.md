@@ -11,7 +11,7 @@ them across turns.
 | `dialogue` | Build Gemma/Llama 3 prompts, generate continuations, validate emotional triples |
 | `pipeline` | Classify emotion when needed and retain successful dialogue turns |
 | `strategy` | Coordinate protocols, input filtering, templates, generator candidates, and fallback |
-| `safety` | Rule-based checks and optional moderation adapters |
+| `toxicity` | Rule-based checks and optional moderation adapters |
 | `asr`, `tts` | Transcribe files and synthesize speech through optional libraries |
 | `emotion`, `generation` | Emotion classification and auxiliary emotional GPT-2 |
 | `interest` | Spanish keyword scoring with normalized whole-stem matching |
@@ -77,7 +77,7 @@ Callbacks should consume ordinary copyable context data and return a string,
 the caller after selection, not inside a generator. Share model instances across
 concurrent callbacks only when the adapter supports that access pattern.
 
-## Moderation
+## Toxicity filtering
 
 The default detector uses packaged terms, phrases, and category patterns. It is a
 heuristic, not a guarantee of safety. Title allowlisting uses phrase boundaries and

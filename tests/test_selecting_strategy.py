@@ -71,7 +71,7 @@ class SelectingStrategyTest(unittest.TestCase):
         )
 
         self.assertEqual(result.source, "toxicity_filter")
-        self.assertTrue(result.safety.flagged)
+        self.assertTrue(result.toxicity.flagged)
 
     def test_regex_handler_handles_greeting(self) -> None:
         result = SelectingStrategy().select_response(

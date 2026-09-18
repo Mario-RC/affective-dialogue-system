@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass, field
 
-from affective_dialogue_system.safety.schemas import SafetyCategory, SafetyResult
+from affective_dialogue_system.toxicity.schemas import ToxicityCategory, ToxicityResult
 
 DEFAULT_DETOXIFY_THRESHOLDS = {
     "toxicity": 0.2,
@@ -22,18 +22,18 @@ DEFAULT_DETOXIFY_THRESHOLDS = {
 }
 
 DETOXIFY_CATEGORY_MAP = {
-    "obscene": SafetyCategory.OBSCENE,
-    "identity_attack": SafetyCategory.IDENTITY_ATTACK,
-    "insult": SafetyCategory.INSULT,
-    "threat": SafetyCategory.THREAT,
-    "sexual_explicit": SafetyCategory.SEXUAL_EXPLICIT,
-    "severe_toxicity": SafetyCategory.VIOLENCE_AND_HATE,
-    "toxicity": SafetyCategory.PROHIBITED_TERM,
+    "obscene": ToxicityCategory.OBSCENE,
+    "identity_attack": ToxicityCategory.IDENTITY_ATTACK,
+    "insult": ToxicityCategory.INSULT,
+    "threat": ToxicityCategory.THREAT,
+    "sexual_explicit": ToxicityCategory.SEXUAL_EXPLICIT,
+    "severe_toxicity": ToxicityCategory.VIOLENCE_AND_HATE,
+    "toxicity": ToxicityCategory.PROHIBITED_TERM,
 }
 
 
 @dataclass
-class DetoxifySafetyDetector:
+class DetoxifyToxicityDetector:
     model_type: str = "multilingual"
     checkpoint: str | None = None
     thresholds: dict[str, float] = field(default_factory=lambda: dict(DEFAULT_DETOXIFY_THRESHOLDS))
@@ -47,7 +47,7 @@ class DetoxifySafetyDetector:
 
         self.model = Detoxify(model_type=self.model_type, checkpoint=self.checkpoint)
 
-    def check(self, text: str) -> SafetyResult:
+    def check(self, text: str) -> ToxicityResult:
         raw = self.model.predict([text])
         labels = {label: float(values[0]) for label, values in raw.items()}
         if not labels or any(
@@ -60,11 +60,11 @@ class DetoxifySafetyDetector:
             if value > self.thresholds.get(label, 1.0)
         ]
         if not exceeded:
-            return SafetyResult.safe()
+            return ToxicityResult.safe()
 
         label, score = max(exceeded, key=lambda item: item[1])
-        category = DETOXIFY_CATEGORY_MAP.get(label, SafetyCategory.PROHIBITED_TERM)
-        return SafetyResult.flagged_result(
+        category = DETOXIFY_CATEGORY_MAP.get(label, ToxicityCategory.PROHIBITED_TERM)
+        return ToxicityResult.flagged_result(
             category,
             source="detoxify",
             score=score,

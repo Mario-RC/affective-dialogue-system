@@ -38,7 +38,7 @@ asr = [
 tts = [
   "TTS>=0.22,<0.23",
 ]
-safety = [
+toxicity = [
   "affective-dialogue-system[ml]",
   "detoxify>=0.5",
 ]
@@ -47,7 +47,7 @@ dev = [
   "build>=1,<2",
   "ruff>=0.11,<0.17",
 ]
-all = ["affective-dialogue-system[ml,asr,tts,safety]"]
+all = ["affective-dialogue-system[ml,asr,tts,toxicity]"]
 
 [project.scripts]
 affective-dialogue = "affective_dialogue_system.cli:main"
@@ -56,7 +56,7 @@ affective-dialogue = "affective_dialogue_system.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-"affective_dialogue_system.safety" = ["data/*.txt"]
+"affective_dialogue_system.toxicity" = ["data/*.txt"]
 
 [tool.ruff]
 line-length = 100

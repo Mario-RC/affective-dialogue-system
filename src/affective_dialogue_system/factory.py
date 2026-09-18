@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from affective_dialogue_system.config import AppConfig
 from affective_dialogue_system.dialogue.engine import AffectiveDialogueEngine, GenerationSettings
-from affective_dialogue_system.safety import SafetyFilter
 from affective_dialogue_system.strategy import SelectingStrategy
 from affective_dialogue_system.strategy.llm_handler import ResponseGenerator
 from affective_dialogue_system.strategy.protocols import (
@@ -13,27 +12,30 @@ from affective_dialogue_system.strategy.protocols import (
     TopicMonitoringProtocol,
 )
 from affective_dialogue_system.strategy.rule_based_handler import RuleBasedHandler
+from affective_dialogue_system.toxicity import ToxicityFilter
 
 
-def create_safety_filter(config: AppConfig) -> SafetyFilter:
-    settings = config.safety
+def create_toxicity_filter(config: AppConfig) -> ToxicityFilter:
+    settings = config.toxicity
     if not settings.enabled:
-        return SafetyFilter()
-    result = SafetyFilter.default() if settings.local_rules else SafetyFilter()
+        return ToxicityFilter()
+    result = ToxicityFilter.default() if settings.local_rules else ToxicityFilter()
     if settings.detoxify.enabled:
-        from affective_dialogue_system.safety.detoxify_adapter import DetoxifySafetyDetector
+        from affective_dialogue_system.toxicity.detoxify_adapter import DetoxifyToxicityDetector
 
         result.detectors.append(
-            DetoxifySafetyDetector(
+            DetoxifyToxicityDetector(
                 model_type=settings.detoxify.model_type,
                 checkpoint=settings.detoxify.checkpoint,
             )
         )
     if settings.llama_guard.enabled:
-        from affective_dialogue_system.safety.llama_guard_adapter import LlamaGuardSafetyDetector
+        from affective_dialogue_system.toxicity.llama_guard_adapter import (
+            LlamaGuardToxicityDetector,
+        )
 
         result.detectors.append(
-            LlamaGuardSafetyDetector(
+            LlamaGuardToxicityDetector(
                 model_id=settings.llama_guard.model,
                 device=config.runtime.device,
                 cache_dir=config.runtime.cache_dir,
@@ -69,7 +71,7 @@ def create_strategy(
 ) -> SelectingStrategy:
     settings = config.selecting_strategy
     return SelectingStrategy(
-        safety_filter=create_safety_filter(config),
+        toxicity_filter=create_toxicity_filter(config),
         glucose_protocol=GlucoseMonitoringProtocol(settings.glucose_threshold_mg_dl),
         timeout_protocol=TimeoutProtocol(settings.timeout_seconds),
         topic_protocol=TopicMonitoringProtocol(settings.topic_max_consecutive_turns),

@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Any
 
 from affective_dialogue_system.emotion.labels import Emotion
-from affective_dialogue_system.safety.schemas import SafetyResult
+from affective_dialogue_system.toxicity.schemas import ToxicityResult
 
 
 @dataclass
@@ -48,7 +48,7 @@ class StrategyResult:
     emotional_response: str | None = None
     follow_up_question: str | None = None
     should_end_session: bool = False
-    safety: SafetyResult | None = None
+    toxicity: ToxicityResult | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
@@ -60,7 +60,7 @@ class StrategyResult:
         emotional_response: str | None = None,
         follow_up_question: str | None = None,
         should_end_session: bool = False,
-        safety: SafetyResult | None = None,
+        toxicity: ToxicityResult | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> StrategyResult:
         return cls(
@@ -69,6 +69,6 @@ class StrategyResult:
             emotional_response=emotional_response,
             follow_up_question=follow_up_question,
             should_end_session=should_end_session,
-            safety=safety,
+            toxicity=toxicity,
             metadata=metadata or {},
         )

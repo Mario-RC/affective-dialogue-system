@@ -25,7 +25,7 @@ Install the integrations you need:
 | `ml` | Dialogue generation, emotion classification, and emotional GPT-2 |
 | `asr` | Whisper transcription, including the ML dependencies |
 | `tts` | Coqui TTS / XTTS speech synthesis |
-| `safety` | Detoxify and Llama Guard adapters, including the ML dependencies |
+| `toxicity` | Detoxify and Llama Guard adapters, including the ML dependencies |
 | `dev` | Tests, linting, formatting, and package builds |
 | `all` | All runtime integrations |
 
@@ -37,11 +37,11 @@ python -m pip install -e ".[asr,tts]"
 
 ## Quick start
 
-These commands work with the core installation and the default local safety rules:
+These commands work with the core installation and the default local toxicity rules:
 
 ```bash
 affective-dialogue interest "Siento dolor y mareo"
-affective-dialogue safety "Hola, hablemos de música"
+affective-dialogue toxicity "Hola, hablemos de música"
 affective-dialogue select "hola" --language es
 ```
 
@@ -53,7 +53,7 @@ affective-dialogue chat "No puedo creer que hayamos perdido otra vez" \
   --language es --emotion ANGER --second-emotion SADNESS
 ```
 
-`chat` checks input and output with the configured safety filter and generates
+`chat` checks input and output with the configured toxicity filter and generates
 one emotional response. `select` runs the protocol/template/fallback selector;
 it does not attach a dialogue LLM. To attach one, use the Python example below.
 Each CLI invocation is a separate turn; use the Python API for persistent state.
@@ -137,7 +137,7 @@ print(response.format())
 
 `AffectiveDialogueSystem` retains successful turns and can use an injected
 `EmotionClassifier` when no emotion is supplied. It is the direct generation API;
-protocol selection and safety filtering are provided separately by the selector.
+protocol selection and toxicity filtering are provided separately by the selector.
 See [examples/text_chat.py](examples/text_chat.py).
 
 Implementation links: [history management](src/affective_dialogue_system/pipeline.py),
@@ -156,12 +156,12 @@ flowchart TD
     C -->|handled| R
     C -->|continue| D{Topic monitoring}
     D -->|handled| R
-    D -->|continue| E{Input safety}
+    D -->|continue| E{Input toxicity check}
     E -->|flagged| R
-    E -->|continue| F{Template response passes safety}
+    E -->|continue| F{Template response passes toxicity check}
     F -->|yes| R
     F -->|no| G[Concurrent generator candidates]
-    G --> H{Valid candidate passes output safety before deadline}
+    G --> H{Valid candidate passes output toxicity check before deadline}
     H -->|yes| R
     H -->|no| I[Predefined fallback]
     I --> R
@@ -182,7 +182,7 @@ for shutdown and integration details.
 
 The glucose state machine preserves research prototype behavior. Its software
 checks do not establish clinical validity, and it is not a validated medical
-protocol. The rule-based safety filter is also a heuristic with false positives
+protocol. The rule-based toxicity filter is also a heuristic with false positives
 and false negatives; optional model detectors do not eliminate those limitations.
 
 ## Configuration
